@@ -8,8 +8,6 @@
 - **Data Format**: Structures data to resemble MLS listings.
 - **Export Flexibility**: Options to save as either CSV or Excel.
 
-[Video Guide for HomeHarvest](https://youtu.be/J1qgNPgmSLI) - _updated for release v0.3.4_
-
 ![homeharvest](https://github.com/ZacharyHampton/HomeHarvest/assets/78247585/b3d5d727-e67b-4a9f-85d8-1e65fd18620a)
 
 ## Installation
