@@ -4,13 +4,13 @@ from .core.scrapers import ScraperInput
 from .utils import process_result, ordered_properties, validate_input, validate_dates, validate_limit
 from .core.scrapers.realtor import RealtorScraper
 from .core.scrapers.models import ListingType, SearchPropertyType, ReturnType, Property
-
+from typing import Optional, List
 
 def scrape_property(
     location: str,
     listing_type: str = "for_sale",
     return_type: str = "pandas",
-    property_type: list[str] | None = None,
+    property_type: Optional[List[str]] = None,
     radius: float = None,
     mls_only: bool = False,
     past_days: int = None,
