@@ -4,7 +4,7 @@ from .core.scrapers import ScraperInput
 from .utils import process_result, ordered_properties, validate_input, validate_dates, validate_limit
 from .core.scrapers.realtor import RealtorScraper
 from .core.scrapers.models import ListingType, SearchPropertyType, ReturnType, Property
-from typing import Optional, List
+from typing import Union, Optional, List
 
 def scrape_property(
     location: str,
@@ -21,7 +21,7 @@ def scrape_property(
     extra_property_data: bool = True,
     exclude_pending: bool = False,
     limit: int = 10000
-) -> pd.DataFrame | list[dict] | list[Property]:
+) -> Union[pd.DataFrame, list[dict], list[Property]]:
     """
     Scrape properties from Realtor.com based on a given location and listing type.
     :param location: Location to search (e.g. "Dallas, TX", "85281", "2530 Al Lipscomb Way")
