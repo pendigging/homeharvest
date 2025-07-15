@@ -1,5 +1,4 @@
 from __future__ import annotations
-from dataclasses import dataclass
 from typing import Union
 
 import requests
@@ -9,10 +8,10 @@ import uuid
 from ...exceptions import AuthenticationError
 from .models import Property, ListingType, SiteName, SearchPropertyType, ReturnType
 import json
+from pydantic import BaseModel
 
 
-@dataclass
-class ScraperInput:
+class ScraperInput(BaseModel):
     location: str
     listing_type: ListingType
     property_type: list[SearchPropertyType] | None = None

@@ -3,8 +3,10 @@ _SEARCH_HOMES_DATA_BASE = """{
     listing_id
     property_id
     href
+    permalink
     list_date
     status
+    mls_status
     last_sold_price
     last_sold_date
     list_price
@@ -12,6 +14,15 @@ _SEARCH_HOMES_DATA_BASE = """{
     list_price_min
     price_per_sqft
     tags
+    open_houses {
+        start_date
+        end_date
+        description
+        time_zone
+        dst
+        href
+        methods
+    }
     details {
         category
         text
@@ -154,6 +165,7 @@ _SEARCH_HOMES_DATA_BASE = """{
         }
         mls_set
         nrds_id
+        state_license
         rental_corporation {
             fulfillment_id
         }
@@ -171,6 +183,23 @@ fragment HomeData on Home {
     property_id
     nearbySchools: nearby_schools(radius: 5.0, limit_per_level: 3) {
         __typename schools { district { __typename id name } }
+    }
+    popularity {
+        periods {
+            clicks_total
+            views_total
+            dwell_time_mean
+            dwell_time_median
+            leads_total
+            shares_total
+            saves_total
+            last_n_days
+        }
+    }
+    location {
+        parcel {
+            parcel_id
+        }
     }
     taxHistory: tax_history { __typename tax year assessment { __typename building land total } }
     monthly_fees {
@@ -205,6 +234,23 @@ HOMES_DATA = """%s
                 one_time_fees {
                     description
                     display_amount
+                }
+                popularity {
+                    periods {
+                        clicks_total
+                        views_total
+                        dwell_time_mean
+                        dwell_time_median
+                        leads_total
+                        shares_total
+                        saves_total
+                        last_n_days
+                    }
+                }
+                location {
+                    parcel {
+                        parcel_id
+                    }
                 }
                 parking {
                     unassigned_space_rent

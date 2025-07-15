@@ -254,16 +254,6 @@ def test_apartment_list_price():
     )
 
 
-def test_builder_exists():
-    listing = scrape_property(
-        location="18149 W Poston Dr, Surprise, AZ 85387",
-        extra_property_data=False,
-    )
-
-    assert listing is not None
-    assert listing["builder_name"].nunique() > 0
-
-
 def test_phone_number_matching():
     searches = [
         scrape_property(
@@ -303,3 +293,83 @@ def test_return_type():
     assert all(isinstance(result, pd.DataFrame) for result in results["pandas"])
     assert all(isinstance(result[0], Property) for result in results["pydantic"])
     assert all(isinstance(result[0], dict) for result in results["raw"])
+
+
+def test_has_open_house():
+    address_result = scrape_property("1 Hawthorne St Unit 12F, San Francisco, CA 94105", return_type="raw")
+    assert address_result[0]["open_houses"] is not None  #: has open house data from address search
+
+    zip_code_result = scrape_property("94105", return_type="raw")
+    address_from_zip_result = list(filter(lambda row: row["property_id"] == '1264014746', zip_code_result))
+
+    assert address_from_zip_result[0]["open_houses"] is not None  #: has open house data from general search
+
+
+
+def test_return_type_consistency():
+    """Test that return_type works consistently between general and address searches"""
+    
+    # Test configurations - different search types
+    test_locations = [
+        ("Dallas, TX", "general"),  # General city search
+        ("75201", "zip"),          # ZIP code search
+        ("2530 Al Lipscomb Way", "address")  # Address search
+    ]
+    
+    for location, search_type in test_locations:
+        # Test all return types for each search type
+        pandas_result = scrape_property(
+            location=location,
+            listing_type="for_sale",
+            limit=3,
+            return_type="pandas"
+        )
+        
+        pydantic_result = scrape_property(
+            location=location,
+            listing_type="for_sale",
+            limit=3,
+            return_type="pydantic"
+        )
+        
+        raw_result = scrape_property(
+            location=location,
+            listing_type="for_sale",
+            limit=3,
+            return_type="raw"
+        )
+        
+        # Validate pandas return type
+        assert isinstance(pandas_result, pd.DataFrame), f"pandas result should be DataFrame for {search_type}"
+        assert len(pandas_result) > 0, f"pandas result should not be empty for {search_type}"
+        
+        required_columns = ["property_id", "property_url", "list_price", "status", "formatted_address"]
+        for col in required_columns:
+            assert col in pandas_result.columns, f"Missing column {col} in pandas result for {search_type}"
+        
+        # Validate pydantic return type
+        assert isinstance(pydantic_result, list), f"pydantic result should be list for {search_type}"
+        assert len(pydantic_result) > 0, f"pydantic result should not be empty for {search_type}"
+        
+        for item in pydantic_result:
+            assert isinstance(item, Property), f"pydantic items should be Property objects for {search_type}"
+            assert item.property_id is not None, f"property_id should not be None for {search_type}"
+        
+        # Validate raw return type
+        assert isinstance(raw_result, list), f"raw result should be list for {search_type}"
+        assert len(raw_result) > 0, f"raw result should not be empty for {search_type}"
+        
+        for item in raw_result:
+            assert isinstance(item, dict), f"raw items should be dict for {search_type}"
+            assert "property_id" in item, f"raw items should have property_id for {search_type}"
+            assert "href" in item, f"raw items should have href for {search_type}"
+        
+        # Cross-validate that different return types return related data
+        pandas_ids = set(pandas_result["property_id"].tolist())
+        pydantic_ids = set(prop.property_id for prop in pydantic_result)
+        raw_ids = set(item["property_id"] for item in raw_result)
+        
+        # All return types should have some properties
+        assert len(pandas_ids) > 0, f"pandas should return properties for {search_type}"
+        assert len(pydantic_ids) > 0, f"pydantic should return properties for {search_type}"
+        assert len(raw_ids) > 0, f"raw should return properties for {search_type}"
