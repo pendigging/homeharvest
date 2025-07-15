@@ -1,7 +1,7 @@
 from __future__ import annotations
-from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
+from pydantic import BaseModel, computed_field
 
 
 class ReturnType(Enum):
@@ -44,12 +44,6 @@ class ListingType(Enum):
     SOLD = "SOLD"
 
 
-@dataclass
-class Agent:
-    name: str | None = None
-    phone: str | None = None
-
-
 class PropertyType(Enum):
     APARTMENT = "APARTMENT"
     BUILDING = "BUILDING"
@@ -74,21 +68,40 @@ class PropertyType(Enum):
     OTHER = "OTHER"
 
 
-@dataclass
-class Address:
-    formatted_address: str | None = None
+class Address(BaseModel):
     full_line: str | None = None
     street: str | None = None
     unit: str | None = None
     city: str | None = None
     state: str | None = None
     zip: str | None = None
+    
+    @computed_field
+    @property
+    def formatted_address(self) -> str | None:
+        """Computed property that combines full_line, city, state, and zip into a formatted address."""
+        parts = []
+        
+        if self.full_line:
+            parts.append(self.full_line)
+        
+        city_state_zip = []
+        if self.city:
+            city_state_zip.append(self.city)
+        if self.state:
+            city_state_zip.append(self.state)
+        if self.zip:
+            city_state_zip.append(self.zip)
+        
+        if city_state_zip:
+            parts.append(", ".join(city_state_zip))
+        
+        return ", ".join(parts) if parts else None
 
 
 
 
-@dataclass
-class Description:
+class Description(BaseModel):
     primary_photo: str | None = None
     alt_photos: list[str] | None = None
     style: PropertyType | None = None
@@ -104,21 +117,18 @@ class Description:
     text: str | None = None
 
 
-@dataclass
-class AgentPhone:  #: For documentation purposes only (at the moment)
+class AgentPhone(BaseModel):
     number: str | None = None
     type: str | None = None
     primary: bool | None = None
     ext: str | None = None
 
 
-@dataclass
-class Entity:
+class Entity(BaseModel):
     name: str
     uuid: str | None = None
 
 
-@dataclass
 class Agent(Entity):
     mls_set: str | None = None
     nrds_id: str | None = None
@@ -127,7 +137,6 @@ class Agent(Entity):
     href: str | None = None
 
 
-@dataclass
 class Office(Entity):
     mls_set: str | None = None
     email: str | None = None
@@ -135,28 +144,23 @@ class Office(Entity):
     phones: list[dict] | AgentPhone | None = None
 
 
-@dataclass
 class Broker(Entity):
     pass
 
 
-@dataclass
 class Builder(Entity):
     pass
 
 
-@dataclass
-class Advertisers:
+class Advertisers(BaseModel):
     agent: Agent | None = None
     broker: Broker | None = None
     builder: Builder | None = None
     office: Office | None = None
 
 
-@dataclass
-class Property:
+class Property(BaseModel):
     property_url: str
-
     property_id: str
     #: allows_cats: bool
     #: allows_dogs: bool
@@ -188,7 +192,7 @@ class Property:
     neighborhoods: Optional[str] = None
     county: Optional[str] = None
     fips_code: Optional[str] = None
-    nearby_schools: list[str] = None
+    nearby_schools: list[str] | None = None
     assessed_value: int | None = None
     estimated_value: int | None = None
     tax: int | None = None

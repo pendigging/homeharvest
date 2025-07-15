@@ -69,45 +69,45 @@ ordered_properties = [
 
 def process_result(result: Property) -> pd.DataFrame:
     prop_data = {prop: None for prop in ordered_properties}
-    prop_data.update(result.__dict__)
+    prop_data.update(result.model_dump())
 
-    if "address" in prop_data:
+    if "address" in prop_data and prop_data["address"]:
         address_data = prop_data["address"]
-        prop_data["full_street_line"] = address_data.full_line
-        prop_data["street"] = address_data.street
-        prop_data["unit"] = address_data.unit
-        prop_data["city"] = address_data.city
-        prop_data["state"] = address_data.state
-        prop_data["zip_code"] = address_data.zip
+        prop_data["full_street_line"] = address_data.get("full_line")
+        prop_data["street"] = address_data.get("street")
+        prop_data["unit"] = address_data.get("unit")
+        prop_data["city"] = address_data.get("city")
+        prop_data["state"] = address_data.get("state")
+        prop_data["zip_code"] = address_data.get("zip")
 
     if "advertisers" in prop_data and prop_data.get("advertisers"):
-        advertiser_data: Advertisers | None = prop_data["advertisers"]
-        if advertiser_data.agent:
-            agent_data = advertiser_data.agent
-            prop_data["agent_id"] = agent_data.uuid
-            prop_data["agent_name"] = agent_data.name
-            prop_data["agent_email"] = agent_data.email
-            prop_data["agent_phones"] = agent_data.phones
-            prop_data["agent_mls_set"] = agent_data.mls_set
-            prop_data["agent_nrds_id"] = agent_data.nrds_id
+        advertiser_data = prop_data["advertisers"]
+        if advertiser_data.get("agent"):
+            agent_data = advertiser_data["agent"]
+            prop_data["agent_id"] = agent_data.get("uuid")
+            prop_data["agent_name"] = agent_data.get("name")
+            prop_data["agent_email"] = agent_data.get("email")
+            prop_data["agent_phones"] = agent_data.get("phones")
+            prop_data["agent_mls_set"] = agent_data.get("mls_set")
+            prop_data["agent_nrds_id"] = agent_data.get("nrds_id")
 
-        if advertiser_data.broker:
-            broker_data = advertiser_data.broker
-            prop_data["broker_id"] = broker_data.uuid
-            prop_data["broker_name"] = broker_data.name
+        if advertiser_data.get("broker"):
+            broker_data = advertiser_data["broker"]
+            prop_data["broker_id"] = broker_data.get("uuid")
+            prop_data["broker_name"] = broker_data.get("name")
 
-        if advertiser_data.builder:
-            builder_data = advertiser_data.builder
-            prop_data["builder_id"] = builder_data.uuid
-            prop_data["builder_name"] = builder_data.name
+        if advertiser_data.get("builder"):
+            builder_data = advertiser_data["builder"]
+            prop_data["builder_id"] = builder_data.get("uuid")
+            prop_data["builder_name"] = builder_data.get("name")
 
-        if advertiser_data.office:
-            office_data = advertiser_data.office
-            prop_data["office_id"] = office_data.uuid
-            prop_data["office_name"] = office_data.name
-            prop_data["office_email"] = office_data.email
-            prop_data["office_phones"] = office_data.phones
-            prop_data["office_mls_set"] = office_data.mls_set
+        if advertiser_data.get("office"):
+            office_data = advertiser_data["office"]
+            prop_data["office_id"] = office_data.get("uuid")
+            prop_data["office_name"] = office_data.get("name")
+            prop_data["office_email"] = office_data.get("email")
+            prop_data["office_phones"] = office_data.get("phones")
+            prop_data["office_mls_set"] = office_data.get("mls_set")
 
     prop_data["price_per_sqft"] = prop_data["prc_sqft"]
     prop_data["nearby_schools"] = filter(None, prop_data["nearby_schools"]) if prop_data["nearby_schools"] else None
