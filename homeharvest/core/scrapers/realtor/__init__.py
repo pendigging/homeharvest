@@ -209,13 +209,15 @@ class RealtorScraper(Scraper):
             property_url=result["href"],
             property_id=property_id,
             listing_id=result.get("listing_id"),
+            permalink=result.get("permalink"),
             status=("PENDING" if is_pending else "CONTINGENT" if is_contingent else result["status"].upper()),
             list_price=result["list_price"],
             list_price_min=result["list_price_min"],
             list_price_max=result["list_price_max"],
-            list_date=(result["list_date"].split("T")[0] if result.get("list_date") else None),
+            list_date=(datetime.fromisoformat(result["list_date"].split("T")[0]) if result.get("list_date") else None),
             prc_sqft=result.get("price_per_sqft"),
-            last_sold_date=result.get("last_sold_date"),
+            last_sold_date=(datetime.fromisoformat(result["last_sold_date"]) if result.get("last_sold_date") else None),
+            pending_date=(datetime.fromisoformat(result["pending_date"].split("T")[0]) if result.get("pending_date") else None),
             new_construction=result["flags"].get("is_new_construction") is True,
             hoa_fee=(result["hoa"]["fee"] if result.get("hoa") and isinstance(result["hoa"], dict) else None),
             latitude=(result["location"]["address"]["coordinate"].get("lat") if able_to_get_lat_long else None),
@@ -232,6 +234,26 @@ class RealtorScraper(Scraper):
             advertisers=advertisers,
             tax=prop_details.get("tax"),
             tax_history=prop_details.get("tax_history"),
+            
+            # Additional fields from GraphQL
+            mls_status=result.get("mls_status"),
+            last_sold_price=result.get("last_sold_price"),
+            tags=result.get("tags"),
+            details=result.get("details"),
+            open_houses=self._parse_open_houses(result.get("open_houses")),
+            pet_policy=result.get("pet_policy"),
+            units=self._parse_units(result.get("units")),
+            monthly_fees=result.get("monthly_fees"),
+            one_time_fees=result.get("one_time_fees"),
+            parking=result.get("parking"),
+            terms=result.get("terms"),
+            popularity=result.get("popularity"),
+            tax_record=self._parse_tax_record(result.get("tax_record")),
+            parcel_info=result.get("location", {}).get("parcel"),
+            current_estimates=self._parse_current_estimates(result.get("current_estimates")),
+            estimates=result.get("estimates"),
+            photos=result.get("photos"),
+            flags=result.get("flags"),
         )
         return realty_property
 
@@ -395,8 +417,9 @@ class RealtorScraper(Scraper):
 
                 #: address is retrieved on both homes and search homes, so when merged, homes overrides,
                 # this gets the internal data we want and only updates that (migrate to a func if more fields)
-                result["location"].update(specific_details_for_property["location"])
-                del specific_details_for_property["location"]
+                if "location" in specific_details_for_property:
+                    result["location"].update(specific_details_for_property["location"])
+                    del specific_details_for_property["location"]
 
                 result.update(specific_details_for_property)
 
@@ -614,6 +637,12 @@ class RealtorScraper(Scraper):
             city=address["city"],
             state=address["state_code"],
             zip=address["postal_code"],
+            
+            # Additional address fields
+            street_direction=address.get("street_direction"),
+            street_number=address.get("street_number"),
+            street_name=address.get("street_name"),
+            street_suffix=address.get("street_suffix"),
         )
 
     @staticmethod
@@ -630,7 +659,7 @@ class RealtorScraper(Scraper):
         if style is not None:
             style = style.upper()
 
-        primary_photo = ""
+        primary_photo = None
         if (primary_photo_info := result.get("primary_photo")) and (
             primary_photo_href := primary_photo_info.get("href")
         ):
@@ -654,6 +683,10 @@ class RealtorScraper(Scraper):
             garage=description_data.get("garage"),
             stories=description_data.get("stories"),
             text=description_data.get("text"),
+            
+            # Additional description fields
+            name=description_data.get("name"),
+            type=description_data.get("type"),
         )
 
     @staticmethod
@@ -685,3 +718,89 @@ class RealtorScraper(Scraper):
             for photo_info in photos_info
             if photo_info.get("href")
         ]
+
+    @staticmethod
+    def _parse_open_houses(open_houses_data: list[dict] | None) -> list[dict] | None:
+        """Parse open houses data and convert date strings to datetime objects"""
+        if not open_houses_data:
+            return None
+            
+        parsed_open_houses = []
+        for oh in open_houses_data:
+            parsed_oh = oh.copy()
+            
+            # Parse start_date and end_date
+            if parsed_oh.get("start_date"):
+                try:
+                    parsed_oh["start_date"] = datetime.fromisoformat(parsed_oh["start_date"].replace("Z", "+00:00"))
+                except (ValueError, AttributeError):
+                    parsed_oh["start_date"] = None
+                    
+            if parsed_oh.get("end_date"):
+                try:
+                    parsed_oh["end_date"] = datetime.fromisoformat(parsed_oh["end_date"].replace("Z", "+00:00"))
+                except (ValueError, AttributeError):
+                    parsed_oh["end_date"] = None
+                    
+            parsed_open_houses.append(parsed_oh)
+            
+        return parsed_open_houses
+
+    @staticmethod
+    def _parse_units(units_data: list[dict] | None) -> list[dict] | None:
+        """Parse units data and convert date strings to datetime objects"""
+        if not units_data:
+            return None
+            
+        parsed_units = []
+        for unit in units_data:
+            parsed_unit = unit.copy()
+            
+            # Parse availability date
+            if parsed_unit.get("availability") and parsed_unit["availability"].get("date"):
+                try:
+                    parsed_unit["availability"]["date"] = datetime.fromisoformat(parsed_unit["availability"]["date"].replace("Z", "+00:00"))
+                except (ValueError, AttributeError):
+                    parsed_unit["availability"]["date"] = None
+                    
+            parsed_units.append(parsed_unit)
+            
+        return parsed_units
+
+    @staticmethod
+    def _parse_tax_record(tax_record_data: dict | None) -> dict | None:
+        """Parse tax record data and convert date strings to datetime objects"""
+        if not tax_record_data:
+            return None
+            
+        parsed_tax_record = tax_record_data.copy()
+        
+        # Parse last_update_date
+        if parsed_tax_record.get("last_update_date"):
+            try:
+                parsed_tax_record["last_update_date"] = datetime.fromisoformat(parsed_tax_record["last_update_date"].replace("Z", "+00:00"))
+            except (ValueError, AttributeError):
+                parsed_tax_record["last_update_date"] = None
+                
+        return parsed_tax_record
+
+    @staticmethod
+    def _parse_current_estimates(estimates_data: list[dict] | None) -> list[dict] | None:
+        """Parse current estimates data and convert date strings to datetime objects"""
+        if not estimates_data:
+            return None
+            
+        parsed_estimates = []
+        for estimate in estimates_data:
+            parsed_estimate = estimate.copy()
+            
+            # Parse date
+            if parsed_estimate.get("date"):
+                try:
+                    parsed_estimate["date"] = datetime.fromisoformat(parsed_estimate["date"].replace("Z", "+00:00"))
+                except (ValueError, AttributeError):
+                    parsed_estimate["date"] = None
+                    
+            parsed_estimates.append(parsed_estimate)
+            
+        return parsed_estimates

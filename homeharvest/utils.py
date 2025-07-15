@@ -8,9 +8,11 @@ ordered_properties = [
     "property_url",
     "property_id",
     "listing_id",
+    "permalink",
     "mls",
     "mls_id",
     "status",
+    "mls_status",
     "text",
     "style",
     "full_street_line",
@@ -19,6 +21,7 @@ ordered_properties = [
     "city",
     "state",
     "zip_code",
+    "formatted_address",
     "beds",
     "full_baths",
     "half_baths",
@@ -29,8 +32,10 @@ ordered_properties = [
     "list_price_min",
     "list_price_max",
     "list_date",
+    "pending_date",
     "sold_price",
     "last_sold_date",
+    "last_sold_price",
     "assessed_value",
     "estimated_value",
     "tax",
@@ -63,7 +68,7 @@ ordered_properties = [
     "office_phones",
     "nearby_schools",
     "primary_photo",
-    "alt_photos",
+    "alt_photos"
 ]
 
 
@@ -79,6 +84,7 @@ def process_result(result: Property) -> pd.DataFrame:
         prop_data["city"] = address_data.get("city")
         prop_data["state"] = address_data.get("state")
         prop_data["zip_code"] = address_data.get("zip")
+        prop_data["formatted_address"] = address_data.get("formatted_address")
 
     if "advertisers" in prop_data and prop_data.get("advertisers"):
         advertiser_data = prop_data["advertisers"]
@@ -112,11 +118,20 @@ def process_result(result: Property) -> pd.DataFrame:
     prop_data["price_per_sqft"] = prop_data["prc_sqft"]
     prop_data["nearby_schools"] = filter(None, prop_data["nearby_schools"]) if prop_data["nearby_schools"] else None
     prop_data["nearby_schools"] = ", ".join(set(prop_data["nearby_schools"])) if prop_data["nearby_schools"] else None
+    
+    # Convert datetime objects to strings for CSV
+    for date_field in ["list_date", "pending_date", "last_sold_date"]:
+        if prop_data.get(date_field):
+            prop_data[date_field] = prop_data[date_field].strftime("%Y-%m-%d") if hasattr(prop_data[date_field], 'strftime') else prop_data[date_field]
+    
+    # Convert HttpUrl objects to strings for CSV
+    if prop_data.get("property_url"):
+        prop_data["property_url"] = str(prop_data["property_url"])
 
     description = result.description
     if description:
-        prop_data["primary_photo"] = description.primary_photo
-        prop_data["alt_photos"] = ", ".join(description.alt_photos) if description.alt_photos else None
+        prop_data["primary_photo"] = str(description.primary_photo) if description.primary_photo else None
+        prop_data["alt_photos"] = ", ".join(str(url) for url in description.alt_photos) if description.alt_photos else None
         prop_data["style"] = (
             description.style
             if isinstance(description.style, str)
