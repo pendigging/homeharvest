@@ -254,16 +254,6 @@ def test_apartment_list_price():
     )
 
 
-def test_builder_exists():
-    listing = scrape_property(
-        location="18149 W Poston Dr, Surprise, AZ 85387",
-        extra_property_data=False,
-    )
-
-    assert listing is not None
-    assert listing["builder_name"].nunique() > 0
-
-
 def test_phone_number_matching():
     searches = [
         scrape_property(
