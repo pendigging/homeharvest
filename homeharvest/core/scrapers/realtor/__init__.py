@@ -391,7 +391,14 @@ class RealtorScraper(Scraper):
             extra_property_details = self.get_bulk_prop_details(property_ids) or {}
 
             for result in properties_list:
-                result.update(extra_property_details.get(result["property_id"], {}))
+                specific_details_for_property = extra_property_details.get(result["property_id"], {})
+
+                #: address is retrieved on both homes and search homes, so when merged, homes overrides,
+                # this gets the internal data we want and only updates that (migrate to a func if more fields)
+                result["location"].update(specific_details_for_property["location"])
+                del specific_details_for_property["location"]
+
+                result.update(specific_details_for_property)
 
         if self.return_type != ReturnType.raw:
             with ThreadPoolExecutor(max_workers=self.NUM_PROPERTY_WORKERS) as executor:

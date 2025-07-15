@@ -76,12 +76,15 @@ class PropertyType(Enum):
 
 @dataclass
 class Address:
+    formatted_address: str | None = None
     full_line: str | None = None
     street: str | None = None
     unit: str | None = None
     city: str | None = None
     state: str | None = None
     zip: str | None = None
+
+
 
 
 @dataclass

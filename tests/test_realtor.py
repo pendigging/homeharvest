@@ -303,3 +303,13 @@ def test_return_type():
     assert all(isinstance(result, pd.DataFrame) for result in results["pandas"])
     assert all(isinstance(result[0], Property) for result in results["pydantic"])
     assert all(isinstance(result[0], dict) for result in results["raw"])
+
+
+def test_has_open_house():
+    address_result = scrape_property("1 Hawthorne St Unit 12F, San Francisco, CA 94105", return_type="raw")
+    assert address_result[0]["open_houses"] is not None  #: has open house data from address search
+
+    zip_code_result = scrape_property("94105", return_type="raw")
+    address_from_zip_result = list(filter(lambda row: row["property_id"] == '1264014746', zip_code_result))
+
+    assert address_from_zip_result[0]["open_houses"] is not None  #: has open house data from general search
