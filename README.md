@@ -47,6 +47,22 @@ properties.to_csv(filename, index=False)
 print(properties.head())
 ```
 
+### Flexible Location Formats
+```py
+# HomeHarvest supports any of these location formats:
+properties = scrape_property(location="92104")  # Just zip code
+properties = scrape_property(location="San Diego")  # Just city  
+properties = scrape_property(location="San Diego, CA")  # City, state
+properties = scrape_property(location="San Diego, California")  # Full state name
+properties = scrape_property(location="1234 Main St, San Diego, CA 92104")  # Full address
+
+# You can also search for properties within a radius of a specific address
+properties = scrape_property(
+    location="1234 Main St, San Diego, CA 92104",
+    radius=5.0  # 5 mile radius
+)
+```
+
 ## Output
 ```plaintext
 >>> properties.head()
@@ -59,10 +75,35 @@ print(properties.head())
 [5 rows x 22 columns]
 ```
 
+### Using Pydantic Models
+```py
+from homeharvest import scrape_property
+
+# Get properties as Pydantic models for type safety and data validation
+properties = scrape_property(
+    location="San Diego, CA",
+    listing_type="for_sale",
+    return_type="pydantic"  # Returns list of Property models
+)
+
+# Access model fields with full type hints and validation
+for prop in properties[:5]:
+    print(f"Address: {prop.address.formatted_address}")
+    print(f"Price: ${prop.list_price:,}")
+    if prop.description:
+        print(f"Beds: {prop.description.beds}, Baths: {prop.description.baths_full}")
+```
+
 ### Parameters for `scrape_property()`
 ```
 Required
-├── location (str): The address in various formats - this could be just a zip code, a full address, or city/state, etc.
+├── location (str): Flexible location search - accepts any of these formats:
+    - ZIP code: "92104"
+    - City: "San Diego" or "San Francisco"
+    - City, State (abbreviated or full): "San Diego, CA" or "San Diego, California"
+    - Full address: "1234 Main St, San Diego, CA 92104"
+    - Neighborhood: "Downtown San Diego"
+    - County: "San Diego County"
 ├── listing_type (option): Choose the type of listing.
     - 'for_rent'
     - 'for_sale'
@@ -120,14 +161,17 @@ Property
 │ ├── listing_id
 │ ├── mls
 │ ├── mls_id
-│ └── status
+│ ├── mls_status
+│ ├── status
+│ └── permalink
 
-├── Address Details:
+├── Address Details (Pydantic/Raw):
 │ ├── street
 │ ├── unit
 │ ├── city
 │ ├── state
-│ └── zip_code
+│ ├── zip_code
+│ └── formatted_address*  # Computed field
 
 ├── Property Description:
 │ ├── style
@@ -138,54 +182,69 @@ Property
 │ ├── year_built
 │ ├── stories
 │ ├── garage
-│ └── lot_sqft
+│ ├── lot_sqft
+│ ├── text  # Full description text
+│ └── type
 
 ├── Property Listing Details:
 │ ├── days_on_mls
 │ ├── list_price
 │ ├── list_price_min
 │ ├── list_price_max
-│ ├── list_date
-│ ├── pending_date
+│ ├── list_date  # datetime
+│ ├── pending_date  # datetime
 │ ├── sold_price
-│ ├── last_sold_date
+│ ├── last_sold_date  # datetime
+│ ├── last_sold_price
 │ ├── price_per_sqft
 │ ├── new_construction
-│ └── hoa_fee
+│ ├── hoa_fee
+│ ├── monthly_fees  # List of fees
+│ ├── one_time_fees  # List of fees
+│ └── estimated_value
 
 ├── Tax Information:
-│  ├── year
-│  ├── tax
-│  ├── assessment
-│  │   ├── building
-│  │   ├── land
-│  │   └── total
+│ ├── tax_assessed_value
+│ └── tax_history  # List with years, amounts, assessments
 
 ├── Location Details:
 │ ├── latitude
 │ ├── longitude
-│ ├── nearby_schools
+│ ├── neighborhoods
+│ ├── county
+│ ├── fips_code
+│ ├── parcel_number
+│ └── nearby_schools
 
-├── Agent Info:
-│ ├── agent_id
-│ ├── agent_name
+├── Agent/Broker/Office Info (Pydantic/Raw):
+│ ├── agent_uuid
+│ ├── agent_name  
 │ ├── agent_email
-│ └── agent_phone
-
-├── Broker Info:
-│ ├── broker_id
-│ └── broker_name
-
-├── Builder Info:
-│ ├── builder_id
-│ └── builder_name
-
-├── Office Info:
-│ ├── office_id
+│ ├── agent_phone
+│ ├── agent_state_license
+│ ├── broker_uuid
+│ ├── broker_name
+│ ├── office_uuid
 │ ├── office_name
-│ ├── office_phones
-│ └── office_email
+│ ├── office_email
+│ └── office_phones
 
+├── Additional Fields (Pydantic/Raw only):
+│ ├── estimated_monthly_rental
+│ ├── tags  # Property tags/features
+│ ├── flags  # Status flags (foreclosure, etc)
+│ ├── photos  # All property photos
+│ ├── primary_photo
+│ ├── alt_photos
+│ ├── open_houses  # List of open house events
+│ ├── units  # For multi-family properties
+│ ├── pet_policy
+│ ├── parking
+│ ├── terms  # Listing terms
+│ ├── current_estimates  # Platform estimates with sources
+│ └── estimates  # Historical estimates
+
+* Only available when using return_type='pydantic'
 ```
 
 ### Exceptions
