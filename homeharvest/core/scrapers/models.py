@@ -146,6 +146,7 @@ class Agent(Entity):
     phones: list[dict] | AgentPhone | None = None
     email: str | None = None
     href: str | None = None
+    state_license: str | None = Field(None, description="Advertiser agent state license number")
 
 
 class Office(Entity):
@@ -197,7 +198,7 @@ class Property(BaseModel):
     days_on_mls: int | None = Field(None, description="An integer value determined by the MLS to calculate days on market")
     description: Description | None = None
     tags: list[str] | None = None
-    details: list[dict] | None = None
+    details: list[HomeDetails] | None = None
 
     latitude: float | None = None
     longitude: float | None = None
@@ -208,7 +209,7 @@ class Property(BaseModel):
     assessed_value: int | None = None
     estimated_value: int | None = None
     tax: int | None = None
-    tax_history: list[dict] | None = None
+    tax_history: list[TaxHistory] | None = None
 
     advertisers: Advertisers | None = None
     
@@ -228,7 +229,7 @@ class Property(BaseModel):
     tax_record: TaxRecord | None = None
     parcel_info: dict | None = None  # Keep as dict for flexibility
     current_estimates: list[PropertyEstimate] | None = None
-    estimates: dict | None = None  # Keep as dict for flexibility
+    estimates: HomeEstimates | None = None
     photos: list[dict] | None = None  # Keep as dict for photo structure
     flags: HomeFlags | None = Field(None, description="Home flags for Listing/Property")
 
@@ -294,6 +295,22 @@ class Popularity(BaseModel):
     periods: list[PopularityPeriod] | None = None
 
 
+class Assessment(BaseModel):
+    building: int | None = None
+    land: int | None = None
+    total: int | None = None
+
+
+class TaxHistory(BaseModel):
+    assessment: Assessment | None = None
+    market: Assessment | None = Field(None, description="Market values as provided by the county or local taxing/assessment authority")
+    appraisal: Assessment | None = Field(None, description="Appraised value given by taxing authority")
+    value: Assessment | None = Field(None, description="Value closest to current market value used for assessment by county or local taxing authorities")
+    tax: int | None = None
+    year: int | None = None
+    assessed_year: int | None = Field(None, description="Assessment year for which taxes were billed")
+
+
 class TaxRecord(BaseModel):
     cl_id: str | None = None
     public_record_id: str | None = None
@@ -302,15 +319,31 @@ class TaxRecord(BaseModel):
     tax_parcel_id: str | None = None
 
 
+class EstimateSource(BaseModel):
+    type: str | None = Field(None, description="Type of the avm vendor, list of values: corelogic, collateral, quantarium")
+    name: str | None = Field(None, description="Name of the avm vendor")
+
+
 class PropertyEstimate(BaseModel):
-    estimate: int | None = None
-    estimate_high: int | None = None
-    estimate_low: int | None = None
-    date: datetime | None = None
+    estimate: int | None = Field(None, description="Estimated value of a property")
+    estimate_high: int | None = Field(None, description="Estimated high value of a property")
+    estimate_low: int | None = Field(None, description="Estimated low value of a property")
+    date: datetime | None = Field(None, description="Date of estimation")
     is_best_home_value: bool | None = None
+    source: EstimateSource | None = Field(None, description="Source of the latest estimate value")
+
+
+class HomeEstimates(BaseModel):
+    current_values: list[PropertyEstimate] | None = Field(None, description="Current valuation and best value for home from multiple AVM vendors")
 
 
 class PropertyDetails(BaseModel):
+    category: str | None = None
+    text: list[str] | None = None
+    parent_category: str | None = None
+
+
+class HomeDetails(BaseModel):
     category: str | None = None
     text: list[str] | None = None
     parent_category: str | None = None
