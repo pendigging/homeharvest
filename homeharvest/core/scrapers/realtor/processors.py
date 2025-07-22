@@ -175,7 +175,11 @@ def process_extra_property_details(result: dict, get_key_func=None) -> dict:
         nearby_schools = result.get("nearbySchools")
         schools = nearby_schools.get("schools", []) if nearby_schools else []
         tax_history_data = result.get("taxHistory", [])
-        assessed_value = tax_history_data[0]["assessment"]["total"] if tax_history_data and tax_history_data[0].get("assessment", {}).get("total") else None
+
+        assessed_value = None
+        if tax_history_data and tax_history_data[0] and tax_history_data[0].get("assessment"):
+            assessed_value = tax_history_data[0]["assessment"].get("total")
+
         tax_history = tax_history_data
 
     if schools:
