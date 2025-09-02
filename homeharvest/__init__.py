@@ -10,7 +10,7 @@ def scrape_property(
     location: str,
     listing_type: str = "for_sale",
     return_type: str = "pandas",
-    property_type: Optional[List[str]] = None,
+    property_type: Optional[List[str]] = ["land"],
     radius: float = None,
     mls_only: bool = False,
     past_days: int = None,

@@ -20,8 +20,8 @@ def main():
         "-o",
         "--output",
         type=str,
-        default="excel",
-        choices=["excel", "csv"],
+        default="json",
+        choices=["json","excel", "csv"],
         help="Output format",
     )
 
@@ -71,6 +71,10 @@ def main():
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         args.filename = f"HomeHarvest_{timestamp}"
 
+    if args.output == "json":
+        output_filename = f"{args.filename}.json"
+        result.to_json(output_filename, index=False)
+        print(f"JSON file saved as {output_filename}")
     if args.output == "excel":
         output_filename = f"{args.filename}.xlsx"
         result.to_excel(output_filename, index=False)
