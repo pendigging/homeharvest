@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import sys
 from homeharvest import scrape_property
 
 
@@ -73,8 +74,9 @@ def main():
 
     if args.output == "json":
         output_filename = f"{args.filename}.json"
-        result.to_json(output_filename, index=False)
-        print(f"JSON file saved as {output_filename}")
+#        result.to_json(output_filename, index=False)
+        result.to_json(sys.stdout, index=False)
+#        print(f"JSON file saved as {output_filename}")
     if args.output == "excel":
         output_filename = f"{args.filename}.xlsx"
         result.to_excel(output_filename, index=False)
